@@ -22,6 +22,7 @@ LEASE_SECONDS = int(os.getenv("LEASE_SECONDS", "30"))
 POLL_INTERVAL = float(os.getenv("POLL_INTERVAL", "1"))
 MAX_DEPTH_DEFAULT = int(os.getenv("MAX_DEPTH_DEFAULT", "2"))
 EMPTY_POLLS_BEFORE_EXIT = int(os.getenv("EMPTY_POLLS_BEFORE_EXIT", "0"))
+PROCESSING_DELAY_MS = int(os.getenv("PROCESSING_DELAY_MS", "0"))
 METRICS_FILE = os.getenv("METRICS_FILE", os.path.join(os.getcwd(), "metrics.log"))
 
 logging.basicConfig(
@@ -251,6 +252,8 @@ def process_task(db: Database, payload: dict[str, Any]) -> dict[str, Any]:
     depth_limit = int(payload.get("depth_limit", MAX_DEPTH_DEFAULT))
 
     node_docs, edge_docs, depth_summary = load_task_subgraph(db, payload)
+    if PROCESSING_DELAY_MS > 0:
+        time.sleep(PROCESSING_DELAY_MS / 1000)
     result = compute_graph_metrics(
         node_docs=node_docs,
         edge_docs=edge_docs,

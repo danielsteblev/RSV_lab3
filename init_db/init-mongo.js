@@ -54,24 +54,28 @@ if (dbRef.social_edges.countDocuments() === 0) {
 if (dbRef.graph_tasks.countDocuments() === 0) {
   const nodes = dbRef.social_nodes.find({}, { node_id: 1, community: 1 }).toArray();
   const tasks = [];
+  const taskBatches = 4;
 
-  for (let i = 0; i < nodes.length; i += 1) {
-    tasks.push({
-      payload: {
-        root_node: nodes[i].node_id,
-        depth_limit: i % 2 === 0 ? 2 : 3,
-        analysis_type: "connectivity",
-        community_hint: nodes[i].community,
-      },
-      status: "pending",
-      worker_id: null,
-      processing_until: null,
-      attempts: 0,
-      priority: 1,
-      result_ref: null,
-      created_at: new Date(),
-      updated_at: new Date(),
-    });
+  for (let batch = 0; batch < taskBatches; batch += 1) {
+    for (let i = 0; i < nodes.length; i += 1) {
+      tasks.push({
+        payload: {
+          root_node: nodes[i].node_id,
+          depth_limit: (batch + i) % 2 === 0 ? 2 : 3,
+          analysis_type: "connectivity",
+          community_hint: nodes[i].community,
+          batch_id: batch + 1,
+        },
+        status: "pending",
+        worker_id: null,
+        processing_until: null,
+        attempts: 0,
+        priority: 1,
+        result_ref: null,
+        created_at: new Date(),
+        updated_at: new Date(),
+      });
+    }
   }
 
   dbRef.graph_tasks.insertMany(tasks);

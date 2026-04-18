@@ -41,6 +41,8 @@ docker compose logs -f worker
 - `worker` запущен в 3 экземплярах;
 - в логах видно, что задачи распределяются между разными `WORKER_ID`.
 
+Для более наглядной демонстрации распределения в `.env` задан `PROCESSING_DELAY_MS=250`, а инициализация создает `32` задачи вместо `8`.
+
 ## Полезные MongoDB-команды
 
 Подключение:
@@ -63,6 +65,15 @@ db.graph_tasks.aggregate([
 
 ```javascript
 db.graph_results.find({}, { root_node: 1, worker_id: 1, elapsed_ms: 1 }).pretty()
+```
+
+Проверка распределения задач по воркерам:
+
+```javascript
+db.graph_results.aggregate([
+  { $group: { _id: "$worker_id", count: { $sum: 1 } } },
+  { $sort: { count: -1, _id: 1 } }
+])
 ```
 
 Поиск зависших задач:
