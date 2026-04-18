@@ -1,0 +1,41 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: lab-mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: labuser
+      MONGO_INITDB_ROOT_PASSWORD: labpass
+      MONGO_INITDB_DATABASE: labdb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+      - ./init_db:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mongosh --quiet -u labuser -p labpass --authenticationDatabase admin --eval \"db.adminCommand('ping').ok\" | grep 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  worker:
+    build: ./worker_py
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POLL_INTERVAL: ${POLL_INTERVAL:-1}
+      LEASE_SECONDS: ${LEASE_SECONDS:-30}
+      MAX_DEPTH_DEFAULT: ${MAX_DEPTH_DEFAULT:-2}
+      EMPTY_POLLS_BEFORE_EXIT: ${EMPTY_POLLS_BEFORE_EXIT:-0}
+      METRICS_FILE: /app/metrics.log
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+volumes:
+  mongo_data:
